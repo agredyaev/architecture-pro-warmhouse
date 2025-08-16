@@ -52,25 +52,7 @@
 
 Добавьте сюда диаграмму контекста в модели C4.
 
-```plantuml
-@startuml C4_Context_As_Is
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
-
-LAYOUT_WITH_LEGEND()
-
-Person(user, "User", "A customer of the company, a homeowner.")
-Person(specialist, "Installation Specialist", "A company employee who installs and configures the equipment.")
-
-System_Ext(temperature_api, "Temperature API", "External system that provides temperature data from sensors.")
-
-System(smart_home_monolith, "'Warm House' System", "A monolithic Go application that manages the heating.")
-
-Rel(user, smart_home_monolith, "Views temperature and manages heating", "Web UI")
-Rel(specialist, smart_home_monolith, "Connects and configures sensors")
-Rel_L(smart_home_monolith, temperature_api, "Requests temperature data", "HTTP/API")
-
-@enduml
-```
+![C4 Context Diagram](./schemas/img/C4_Context_As_Is.svg)
 
 Чтобы добавить ссылку в файл Readme.md, нужно использовать синтаксис Markdown. Это делают так:
 
@@ -98,205 +80,24 @@ Rel_L(smart_home_monolith, temperature_api, "Requests temperature data", "HTTP/A
 
 ### 2. Диаграмма контейнеров (Containers) - План MVP
 
-```plantuml
-@startuml C4_Container_MVP
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
-
-LAYOUT_WITH_LEGEND()
-
-Person(user, "User", "A customer of the company, a homeowner.")
-
-System_Boundary(smart_home_eco, "Smart Home Ecosystem MVP") {
-    Container(spa, "Web Application", "JavaScript, React", "Provides user interface for managing the smart home.")
-    Container(api_gateway, "API Gateway", "Go, Gin", "Exposes the system's API to the outside world.")
-
-    ContainerDb(user_db, "User DB", "PostgreSQL", "Stores user profiles, homes, and access rights.")
-    Container(user_service, "User Service", "Go", "Manages users, homes, and permissions.")
-
-    ContainerDb(device_db, "Device DB", "PostgreSQL", "Stores device registry, configuration and state.")
-    Container(device_service, "Device Service", "Go", "Manages device lifecycle, configuration and sends commands.")
-
-    ContainerDb(telemetry_db, "Telemetry DB", "TimescaleDB", "Stores time-series data from sensors.")
-    Container(telemetry_service, "Telemetry Service", "Go", "Ingests and processes device telemetry.")
-
-    Container(message_broker, "Message Broker", "RabbitMQ", "Enables asynchronous communication between services.")
-}
-
-System_Ext(smart_device, "Smart Device", "Any smart device (sensor, relay) that supports MQTT.")
-
-Rel(user, spa, "Uses", "HTTPS")
-Rel(spa, api_gateway, "Makes API calls", "HTTPS/JSON")
-
-Rel(api_gateway, user_service, "Auth & User Info", "gRPC")
-Rel(api_gateway, device_service, "Device Info & Commands", "gRPC")
-Rel(api_gateway, telemetry_service, "Historical Data", "gRPC")
-
-Rel(user_service, user_db, "Reads/Writes", "SQL")
-Rel(device_service, device_db, "Reads/Writes", "SQL")
-Rel(telemetry_service, telemetry_db, "Reads/Writes", "SQL")
-
-Rel(device_service, message_broker, "Publishes device events & commands")
-Rel(telemetry_service, message_broker, "Publishes telemetry events")
-
-Rel(smart_device, message_broker, "Sends telemetry, receives commands", "MQTT")
-Rel(telemetry_service, message_broker, "Subscribes to telemetry")
-
-@enduml
-```
+![C4 Container Diagram](./schemas/img/C4_Container_MVP.svg)
 
 ### 3. Диаграмма компонентов (Components) - DeviceService
 
 Эта диаграмма показывает внутреннее устройство сервиса `DeviceService`. Он состоит из нескольких логических блоков, которые отвечают за регистрацию устройств и отправку им команд. Такое разделение позволит в будущем легко выделить эти блоки в отдельные микросервисы.
 
-```plantuml
-@startuml C4_Component_Device_Service_MVP
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
-
-LAYOUT_WITH_LEGEND()
-
-Container(api_gateway, "API Gateway", "Go, Gin")
-ContainerDb(device_db, "Device DB", "PostgreSQL")
-Container(message_broker, "Message Broker", "RabbitMQ")
-
-Container_Boundary(device_service, "Device Service") {
-    Component(grpc_controller, "gRPC Controller", "Go", "Handles all incoming gRPC requests.")
-    
-    Component(registry_logic, "Registry Logic", "Go module", "Implements business logic for device registration and configuration.")
-    Component(command_logic, "Command Logic", "Go module", "Implements business logic for sending commands to devices.")
-    
-    Component(device_repo, "Device Repository", "Go", "Handles data access to the database.")
-    Component(event_publisher, "Event Publisher", "Go", "Publishes events to the message broker.")
-
-    Rel(grpc_controller, registry_logic, "Uses")
-    Rel(grpc_controller, command_logic, "Uses")
-    Rel(registry_logic, device_repo, "Uses")
-    Rel(registry_logic, event_publisher, "Uses")
-    Rel(command_logic, event_publisher, "Uses")
-}
-
-Rel(api_gateway, grpc_controller, "Sends requests to", "gRPC")
-Rel(device_repo, device_db, "Reads/Writes data", "SQL")
-Rel(event_publisher, message_broker, "Publishes events/commands to", "AMQP")
-
-@enduml
-```
+![C4 Component Diagram for Device Service](./schemas/img/C4_Component_Device_Service_MVP.svg)
 
 ### Диаграмма кода (Code)
 
 
-```plantuml
-@startuml C4_Code_Telemetry_Service
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
-
-LAYOUT_WITH_LEGEND()
-
-Container(message_broker, "Message Broker", "RabbitMQ")
-ContainerDb(telemetry_db, "Telemetry DB", "TimescaleDB")
-
-Container_Boundary(telemetry_service, "Telemetry Service") {
-    Component(consumer, "TelemetryConsumer", "Go struct", "Receives messages from RabbitMQ, decodes them.")
-    Component(parser, "DataParser", "Go struct", "Parses the JSON message body into a TelemetryData struct.")
-    Component(validator, "DataValidator", "Go struct", "Validates the correctness and completeness of the data.")
-    Component(repository, "TelemetryRepository", "Go struct", "Responsible for persisting data to TimescaleDB.")
-
-    Rel(consumer, parser, "Uses")
-    Rel(consumer, validator, "Uses")
-    Rel(consumer, repository, "Uses")
-}
-
-Rel(consumer, message_broker, "Reads messages from", "AMQP")
-Rel(repository, telemetry_db, "Saves data to", "SQL")
-
-@enduml
-```
+![C4 Code Diagram for Telemetry Service](./schemas/img/C4_Code_Telemetry_Service.svg)
 
 # Задание 3. Разработка ER-диаграммы
 
 Добавьте сюда ER-диаграмму. Она должна отражать ключевые сущности системы, их атрибуты и тип связей между ними.
 
-```plantuml
-@startuml Combined_ERD
-
-!define TABLE(name,desc) class name as "desc" << (T, #FF7700) >>
-!define ENTITY(name) class name << (E, #FF7700) >>
-
-package "User Service DB (PostgreSQL)" {
-    TABLE(users, "Users") {
-        + id: UUID <<PK>>
-        --
-        + email: VARCHAR(255) <<unique>>
-        + password_hash: VARCHAR(255)
-        + full_name: VARCHAR(255)
-        --
-        + created_at: TIMESTAMP
-        + updated_at: TIMESTAMP
-    }
-
-    TABLE(houses, "Houses") {
-        + id: UUID <<PK>>
-        --
-        + name: VARCHAR(255)
-        + address: TEXT
-        --
-        + created_at: TIMESTAMP
-        + updated_at: TIMESTAMP
-    }
-
-    TABLE(user_house_access, "User-House Access") {
-        + user_id: UUID <<FK>>
-        + house_id: UUID <<FK>>
-        --
-        + role: VARCHAR(50)
-    }
-}
-
-users "1" -- "0..*" user_house_access : has access
-houses "1" -- "1..*" user_house_access : is accessed by
-
-package "Device Service DB (PostgreSQL)" {
-    TABLE(device_types, "Device Types") {
-        + id: UUID <<PK>>
-        --
-        + name: VARCHAR(255)
-        + description: TEXT
-        + manufacturer: VARCHAR(255)
-    }
-
-    TABLE(devices, "Devices") {
-        + id: UUID <<PK>>
-        --
-        # type_id: UUID <<FK>>
-        # house_id: UUID
-        + serial_number: VARCHAR(255) <<unique>>
-        + name: VARCHAR(255)
-        + status: VARCHAR(50)
-        + config: JSONB
-        --
-        + created_at: TIMESTAMP
-        + updated_at: TIMESTAMP
-    }
-}
-
-device_types "1" -- "0..*" devices : has
-
-package "Telemetry Service DB (TimescaleDB)" {
-    TABLE(telemetry, "Telemetry (Hypertable)") {
-        + time: TIMESTAMPTZ <<PK>>
-        + device_id: UUID <<PK>>
-        --
-        + value: JSONB
-    }
-}
-
-' Logical relationships between services (shown as dashed lines)
-' These are not physical FOREIGN KEYs, but logical links managed by the application code.
-' A House "contains" Devices. The devices table stores a house_id.
-houses ..> devices : contains
-' A Device "sends" Telemetry. The telemetry table stores a device_id.
-devices ..> telemetry : sends
-
-@enduml
-```
+![ER Diagram](./schemas/img/Combined_ERD.svg)
 
 # Задание 4. Создание и документирование API
 
