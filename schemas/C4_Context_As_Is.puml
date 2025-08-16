@@ -1,0 +1,17 @@
+@startuml C4_Context_As_Is
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(user, "User", "A customer of the company, a homeowner.")
+Person(specialist, "Installation Specialist", "A company employee who installs and configures the equipment.")
+
+System_Ext(temperature_api, "Temperature API", "External system that provides temperature data from sensors.")
+
+System(smart_home_monolith, "'Warm House' System", "A monolithic Go application that manages the heating.")
+
+Rel(user, smart_home_monolith, "Views temperature and manages heating", "Web UI")
+Rel(specialist, smart_home_monolith, "Connects and configures sensors")
+Rel_L(smart_home_monolith, temperature_api, "Requests temperature data", "HTTP/API")
+
+@enduml

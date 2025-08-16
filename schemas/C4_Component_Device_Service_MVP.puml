@@ -1,0 +1,30 @@
+@startuml C4_Component_Device_Service_MVP
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+Container(api_gateway, "API Gateway", "Go, Gin")
+ContainerDb(device_db, "Device DB", "PostgreSQL")
+Container(message_broker, "Message Broker", "RabbitMQ")
+
+Container_Boundary(device_service, "Device Service") {
+    Component(grpc_controller, "gRPC Controller", "Go", "Handles all incoming gRPC requests.")
+    
+    Component(registry_logic, "Registry Logic", "Go module", "Implements business logic for device registration and configuration.")
+    Component(command_logic, "Command Logic", "Go module", "Implements business logic for sending commands to devices.")
+    
+    Component(device_repo, "Device Repository", "Go", "Handles data access to the database.")
+    Component(event_publisher, "Event Publisher", "Go", "Publishes events to the message broker.")
+
+    Rel(grpc_controller, registry_logic, "Uses")
+    Rel(grpc_controller, command_logic, "Uses")
+    Rel(registry_logic, device_repo, "Uses")
+    Rel(registry_logic, event_publisher, "Uses")
+    Rel(command_logic, event_publisher, "Uses")
+}
+
+Rel(api_gateway, grpc_controller, "Sends requests to", "gRPC")
+Rel(device_repo, device_db, "Reads/Writes data", "SQL")
+Rel(event_publisher, message_broker, "Publishes events/commands to", "AMQP")
+
+@enduml

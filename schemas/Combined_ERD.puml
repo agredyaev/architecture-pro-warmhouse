@@ -1,0 +1,81 @@
+@startuml Combined_ERD
+
+!define TABLE(name,desc) class name as "desc" << (T, #FF7700) >>
+!define ENTITY(name) class name << (E, #FF7700) >>
+
+package "User Service DB (PostgreSQL)" {
+    TABLE(users, "Users") {
+        + id: UUID <<PK>>
+        --
+        + email: VARCHAR(255) <<unique>>
+        + password_hash: VARCHAR(255)
+        + full_name: VARCHAR(255)
+        --
+        + created_at: TIMESTAMP
+        + updated_at: TIMESTAMP
+    }
+
+    TABLE(houses, "Houses") {
+        + id: UUID <<PK>>
+        --
+        + name: VARCHAR(255)
+        + address: TEXT
+        --
+        + created_at: TIMESTAMP
+        + updated_at: TIMESTAMP
+    }
+
+    TABLE(user_house_access, "User-House Access") {
+        + user_id: UUID <<FK>>
+        + house_id: UUID <<FK>>
+        --
+        + role: VARCHAR(50)
+    }
+}
+
+users "1" -- "0..*" user_house_access : has access
+houses "1" -- "1..*" user_house_access : is accessed by
+
+package "Device Service DB (PostgreSQL)" {
+    TABLE(device_types, "Device Types") {
+        + id: UUID <<PK>>
+        --
+        + name: VARCHAR(255)
+        + description: TEXT
+        + manufacturer: VARCHAR(255)
+    }
+
+    TABLE(devices, "Devices") {
+        + id: UUID <<PK>>
+        --
+        # type_id: UUID <<FK>>
+        # house_id: UUID
+        + serial_number: VARCHAR(255) <<unique>>
+        + name: VARCHAR(255)
+        + status: VARCHAR(50)
+        + config: JSONB
+        --
+        + created_at: TIMESTAMP
+        + updated_at: TIMESTAMP
+    }
+}
+
+device_types "1" -- "0..*" devices : has
+
+package "Telemetry Service DB (TimescaleDB)" {
+    TABLE(telemetry, "Telemetry (Hypertable)") {
+        + time: TIMESTAMPTZ <<PK>>
+        + device_id: UUID <<PK>>
+        --
+        + value: JSONB
+    }
+}
+
+' Logical relationships between services (shown as dashed lines)
+' These are not physical FOREIGN KEYs, but logical links managed by the application code.
+' A House "contains" Devices. The devices table stores a house_id.
+houses ..> devices : contains
+' A Device "sends" Telemetry. The telemetry table stores a device_id.
+devices ..> telemetry : sends
+
+@enduml
