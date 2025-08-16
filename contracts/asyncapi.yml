@@ -1,0 +1,79 @@
+asyncapi: 2.6.0
+info:
+  title: Smart Home Asynchronous API
+  version: 1.0.0
+  description: |
+    This API defines all asynchronous communication for the Smart Home ecosystem via RabbitMQ.
+    It covers both telemetry ingestion from devices and command dispatching to devices.
+
+servers:
+  production:
+    url: amqp://rabbitmq:5672/
+    protocol: amqp
+    description: RabbitMQ broker for the production environment.
+
+channels:
+  telemetry.v1.data:
+    description: The channel where devices publish their telemetry data.
+    publish:
+      summary: Publish a new telemetry data point.
+      operationId: publishTelemetryData
+      message:
+        $ref: '#/components/messages/TelemetryMessage'
+
+  commands.v1.device.{deviceId}:
+    description: The channel where the Device Service sends commands to a specific device.
+    parameters:
+      deviceId:
+        $ref: '#/components/parameters/deviceId'
+    subscribe:
+      summary: Subscribe to commands for a specific device.
+      operationId: receiveDeviceCommand
+      message:
+        $ref: '#/components/messages/CommandMessage'
+
+components:
+  messages:
+    TelemetryMessage:
+      name: TelemetryMessage
+      title: Telemetry Data Message
+      summary: A message containing a single data point from a device.
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          deviceId:
+            type: string
+            format: uuid
+            description: The unique identifier of the device.
+          timestamp:
+            type: string
+            format: date-time
+            description: The ISO 8601 timestamp of when the measurement was taken.
+          value:
+            type: object
+            description: The actual measurement data (e.g., {"temperature": 21.5}).
+            additionalProperties: true
+    
+    CommandMessage:
+      name: CommandMessage
+      title: Device Command Message
+      summary: A message containing a command for a device.
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          command:
+            type: string
+            description: The command to be executed (e.g., "TURN_ON").
+          payload:
+            type: object
+            description: Additional parameters for the command.
+            additionalProperties: true
+
+  parameters:
+    deviceId:
+      description: The unique identifier of the device.
+      schema:
+        type: string
+        format: uuid
