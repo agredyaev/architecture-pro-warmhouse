@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package device;
+
+option go_package = "github.com/your-repo/smart-home/pkg/device_service;device_service";
+
+import "google/protobuf/timestamp.proto";
+
+// --- Messages for core entities ---
+
+message DeviceType {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    string manufacturer = 4;
+}
+
+message Device {
+    string id = 1;
+    string type_id = 2;
+    string house_id = 3;
+    string name = 4;
+    string serial_number = 5;
+    string status = 6;
+    string config = 7; // JSON string
+    google.protobuf.Timestamp created_at = 8;
+    google.protobuf.Timestamp updated_at = 9;
+}
+
+// --- Service Methods ---
+
+service DeviceService {
+    // --- DeviceType Methods ---
+    rpc CreateDeviceType(CreateDeviceTypeRequest) returns (CreateDeviceTypeResponse);
+    rpc GetDeviceType(GetDeviceTypeRequest) returns (GetDeviceTypeResponse);
+    rpc ListDeviceTypes(ListDeviceTypesRequest) returns (ListDeviceTypesResponse);
+
+    // --- Device Methods ---
+    rpc AddDevice(AddDeviceRequest) returns (AddDeviceResponse);
+    rpc GetDevice(GetDeviceRequest) returns (GetDeviceResponse);
+    rpc GetHouseDevices(GetHouseDevicesRequest) returns (GetHouseDevicesResponse);
+    rpc SendCommand(SendCommandRequest) returns (SendCommandResponse);
+}
+
+// --- Request/Response Messages ---
+
+// CreateDeviceType
+message CreateDeviceTypeRequest {
+    string name = 1;
+    string description = 2;
+    string manufacturer = 3;
+}
+
+message CreateDeviceTypeResponse {
+    string type_id = 1;
+}
+
+// GetDeviceType
+message GetDeviceTypeRequest {
+    string type_id = 1;
+}
+
+message GetDeviceTypeResponse {
+    DeviceType device_type = 1;
+}
+
+// ListDeviceTypes
+message ListDeviceTypesRequest {}
+
+message ListDeviceTypesResponse {
+    repeated DeviceType device_types = 1;
+}
+
+// AddDevice
+message AddDeviceRequest {
+    string type_id = 1;
+    string house_id = 2;
+    string name = 3;
+    string serial_number = 4;
+    string config = 5; // JSON string
+}
+
+message AddDeviceResponse {
+    string device_id = 1;
+}
+
+// GetDevice
+message GetDeviceRequest {
+    string device_id = 1;
+}
+
+message GetDeviceResponse {
+    Device device = 1;
+}
+
+// GetHouseDevices
+message GetHouseDevicesRequest {
+    string house_id = 1;
+}
+
+message GetHouseDevicesResponse {
+    repeated Device devices = 1;
+}
+
+// SendCommand
+message SendCommandRequest {
+    string device_id = 1;
+    string command = 2; // e.g., "TURN_ON", "SET_TEMPERATURE"
+    string payload = 3; // JSON string with command parameters
+}
+
+message SendCommandResponse {
+    string status = 1; // e.g., "SUCCESS", "PENDING"
+}

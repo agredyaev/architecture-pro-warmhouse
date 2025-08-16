@@ -12,8 +12,11 @@ import (
 	"smarthome/db"
 	"smarthome/handlers"
 	"smarthome/services"
+	pb "smarthome/proto/device"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -32,6 +35,16 @@ func main() {
 	temperatureService := services.NewTemperatureService(temperatureAPIURL)
 	log.Printf("Temperature service initialized with API URL: %s\n", temperatureAPIURL)
 
+	// Initialize Device Service gRPC client
+	deviceServiceURL := getEnv("DEVICE_SERVICE_URL", "device-service:50051")
+	conn, err := grpc.Dial(deviceServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("did not connect to device service: %v", err)
+	}
+	defer conn.Close()
+	deviceServiceClient := pb.NewDeviceServiceClient(conn)
+	log.Printf("Device service client initialized for URL: %s\n", deviceServiceURL)
+
 	// Initialize router
 	router := gin.Default()
 
@@ -46,7 +59,7 @@ func main() {
 	apiRoutes := router.Group("/api/v1")
 
 	// Register sensor routes
-	sensorHandler := handlers.NewSensorHandler(database, temperatureService)
+	sensorHandler := handlers.NewSensorHandler(database, temperatureService, deviceServiceClient)
 	sensorHandler.RegisterRoutes(apiRoutes)
 
 	// Start server

@@ -11,19 +11,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// DB represents the database connection
 type DB struct {
 	Pool *pgxpool.Pool
 }
 
-// New creates a new DB instance
 func New(connString string) (*DB, error) {
 	pool, err := pgxpool.New(context.Background(), connString)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
-	// Test the connection
 	if err := pool.Ping(context.Background()); err != nil {
 		return nil, fmt.Errorf("unable to ping database: %w", err)
 	}
@@ -31,14 +28,12 @@ func New(connString string) (*DB, error) {
 	return &DB{Pool: pool}, nil
 }
 
-// Close closes the database connection
 func (db *DB) Close() {
 	if db.Pool != nil {
 		db.Pool.Close()
 	}
 }
 
-// GetSensors retrieves all sensors from the database
 func (db *DB) GetSensors(ctx context.Context) ([]models.Sensor, error) {
 	query := `
 		SELECT id, name, type, location, value, unit, status, last_updated, created_at
@@ -79,7 +74,6 @@ func (db *DB) GetSensors(ctx context.Context) ([]models.Sensor, error) {
 	return sensors, nil
 }
 
-// GetSensorByID retrieves a sensor by its ID
 func (db *DB) GetSensorByID(ctx context.Context, id int) (models.Sensor, error) {
 	query := `
 		SELECT id, name, type, location, value, unit, status, last_updated, created_at
@@ -106,7 +100,6 @@ func (db *DB) GetSensorByID(ctx context.Context, id int) (models.Sensor, error) 
 	return s, nil
 }
 
-// CreateSensor creates a new sensor in the database
 func (db *DB) CreateSensor(ctx context.Context, s models.SensorCreate) (models.Sensor, error) {
 	query := `
 		INSERT INTO sensors (name, type, location, unit, status, last_updated, created_at)
@@ -140,15 +133,12 @@ func (db *DB) CreateSensor(ctx context.Context, s models.SensorCreate) (models.S
 	return sensor, nil
 }
 
-// UpdateSensor updates an existing sensor
 func (db *DB) UpdateSensor(ctx context.Context, id int, s models.SensorUpdate) (models.Sensor, error) {
-	// First check if the sensor exists
 	_, err := db.GetSensorByID(ctx, id)
 	if err != nil {
 		return models.Sensor{}, err
 	}
 
-	// Build the update query dynamically based on which fields are provided
 	query := "UPDATE sensors SET last_updated = $1"
 	args := []interface{}{time.Now()}
 	argCount := 2
@@ -213,7 +203,6 @@ func (db *DB) UpdateSensor(ctx context.Context, id int, s models.SensorUpdate) (
 	return sensor, nil
 }
 
-// DeleteSensor deletes a sensor by its ID
 func (db *DB) DeleteSensor(ctx context.Context, id int) error {
 	query := "DELETE FROM sensors WHERE id = $1"
 	result, err := db.Pool.Exec(ctx, query, id)
@@ -228,7 +217,6 @@ func (db *DB) DeleteSensor(ctx context.Context, id int) error {
 	return nil
 }
 
-// UpdateSensorValue updates the value and status of a sensor
 func (db *DB) UpdateSensorValue(ctx context.Context, id int, value float64, status string) error {
 	query := `
 		UPDATE sensors
