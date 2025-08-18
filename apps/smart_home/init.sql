@@ -1,9 +1,3 @@
--- Create the database if it doesn't exist
-CREATE DATABASE smarthome;
-
--- Connect to the database
-\c smarthome;
-
 -- Create the sensors table
 CREATE TABLE IF NOT EXISTS sensors (
     id SERIAL PRIMARY KEY,
@@ -21,3 +15,9 @@ CREATE TABLE IF NOT EXISTS sensors (
 CREATE INDEX IF NOT EXISTS idx_sensors_type ON sensors(type);
 CREATE INDEX IF NOT EXISTS idx_sensors_location ON sensors(location);
 CREATE INDEX IF NOT EXISTS idx_sensors_status ON sensors(status);
+
+-- Insert a dummy sensor for testing purposes
+INSERT INTO sensors (id, name, type, location, unit, status) VALUES (1, 'Initial Sensor', 'temperature', 'Test Room', 'C', 'active') ON CONFLICT (id) DO NOTHING;
+
+-- Update the sequence to avoid ID conflicts on the next insert
+SELECT setval(pg_get_serial_sequence('sensors', 'id'), COALESCE(max(id), 1)) FROM sensors;

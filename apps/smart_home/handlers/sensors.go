@@ -127,7 +127,7 @@ func (h *SensorHandler) CreateSensor(c *gin.Context) {
 		return
 	}
 
-	res, err := h.DeviceServiceClient.AddDevice(c.Request.Context(), &pb.AddDeviceRequest{
+	_, err := h.DeviceServiceClient.AddDevice(c.Request.Context(), &pb.AddDeviceRequest{
 		TypeId:       "some-type-id", // TODO: Replace with real device type ID
 		HouseId:      "some-house-id", // TODO: Replace with real house ID
 		Name:         sensorCreate.Name,
@@ -137,13 +137,18 @@ func (h *SensorHandler) CreateSensor(c *gin.Context) {
 
 	if err != nil {
 		log.Printf("Error adding device via gRPC: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create sensor"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create sensor via gRPC"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"device_id": res.DeviceId,
-	})
+	// Now, actually create the sensor in our database
+	sensor, err := h.DB.CreateSensor(c.Request.Context(), sensorCreate)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save sensor to database: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusCreated, sensor)
 }
 
 func (h *SensorHandler) UpdateSensor(c *gin.Context) {
@@ -161,7 +166,11 @@ func (h *SensorHandler) UpdateSensor(c *gin.Context) {
 
 	sensor, err := h.DB.UpdateSensor(c.Request.Context(), id, sensorUpdate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err.Error() == "sensor not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
@@ -177,11 +186,15 @@ func (h *SensorHandler) DeleteSensor(c *gin.Context) {
 
 	err = h.DB.DeleteSensor(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err.Error() == "sensor not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Sensor deleted successfully"})
+	c.Status(http.StatusNoContent)
 }
 
 func (h *SensorHandler) UpdateSensorValue(c *gin.Context) {
@@ -203,7 +216,11 @@ func (h *SensorHandler) UpdateSensorValue(c *gin.Context) {
 
 	err = h.DB.UpdateSensorValue(c.Request.Context(), id, request.Value, request.Status)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err.Error() == "sensor not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 

@@ -53,22 +53,40 @@ class DeviceService(device_pb2_grpc.DeviceServiceServicer):
     def __init__(self, publisher):
         self.rabbitmq_publisher = publisher
 
-    def RegisterDevice(self, request, context):
-        logging.info(f"Received RegisterDevice request for device: {request.name}")
+    def AddDevice(self, request, context):
+        logging.info(f"Received AddDevice request for device: {request.name}")
 
+        # Simulate device ID creation
         device_id = f"fake-id-{request.serial_number}"
 
+        # Prepare the event message for RabbitMQ
         event_message = {
-            "event_type": "DeviceRegistered",
+            "event_type": "DeviceAdded",
             "device_id": device_id,
-            "device_name": request.name
+            "device_name": request.name,
+            "type_id": request.type_id,
+            "house_id": request.house_id
         }
         self.rabbitmq_publisher.publish_message(event_message)
 
-        return device_pb2.RegisterDeviceResponse(
-            id=device_id,
-            name=request.name,
-            status="REGISTERED"
+        # Return the response as defined in the proto file
+        return device_pb2.AddDeviceResponse(
+            device_id=device_id
+        )
+
+    def GetDevice(self, request, context):
+        logging.info(f"Received GetDevice request for device: {request.device_id}")
+
+        # Simulate retrieving a device
+        return device_pb2.GetDeviceResponse(
+            device=device_pb2.Device(
+                id=request.device_id,
+                name="Living Room Thermostat",
+                serial_number="SN-12345",
+                type_id="thermostat-1",
+                house_id="house-123",
+                status="active"
+            )
         )
 
 
