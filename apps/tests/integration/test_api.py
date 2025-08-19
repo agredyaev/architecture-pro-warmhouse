@@ -26,6 +26,8 @@ def test_create_and_get_sensor():
     response = requests.get(f"{BASE_URL}/api/v1/sensors/{sensor_id}")
     assert response.status_code == 200
     assert response.json()["name"] == new_sensor["name"]
+    assert "value" in response.json()
+    assert response.json()["value"] != 0
 
 def test_update_sensor():
     """Tests updating an existing sensor."""
