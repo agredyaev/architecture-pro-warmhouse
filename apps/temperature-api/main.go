@@ -6,20 +6,25 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 )
 
 type TemperatureResponse struct {
-	SensorID    string  `json:"sensorId"`
-	Location    string  `json:"location"`
-	Temperature float64 `json:"temperature"`
+	Value       float64   `json:"value"`
+	Unit        string    `json:"unit"`
+	Timestamp   time.Time `json:"timestamp"`
+	Location    string    `json:"location"`
+	Status      string    `json:"status"`
+	SensorID    string    `json:"sensor_id"`
+	SensorType  string    `json:"sensor_type"`
+	Description string    `json:"description"`
 }
 
 func temperatureHandler(w http.ResponseWriter, r *http.Request) {
+	sensorID := strings.TrimPrefix(r.URL.Path, "/temperature/")
 	location := r.URL.Query().Get("location")
-	sensorID := r.URL.Query().Get("sensorId")
 
-	// Logic from README.md to determine location/sensorId if one is missing
 	if location == "" {
 		switch sensorID {
 		case "1":
@@ -47,13 +52,17 @@ func temperatureHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	// Generate a random temperature between 15.0 and 30.0
 	temperature := 15.0 + rand.Float64()*(30.0-15.0)
 
 	response := TemperatureResponse{
-		SensorID:    sensorID,
+		Value:       temperature,
+		Unit:        "°C",
+		Timestamp:   time.Now(),
 		Location:    location,
-		Temperature: temperature,
+		Status:      "active",
+		SensorID:    sensorID,
+		SensorType:  "temperature",
+		Description: "Temperature reading",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -61,7 +70,7 @@ func temperatureHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/temperature", temperatureHandler)
+	http.HandleFunc("/temperature/", temperatureHandler)
 	fmt.Println("Temperature API is running on port 8081")
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }
