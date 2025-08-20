@@ -1,1 +1,43 @@
+# General
 .DS_Store
+.env
+.idea/
+.vscode/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# .NET / C#
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.swp
+project.lock.json
+project.assets.json
+*.csproj.user
+*.cache
+[Bb]in/
+[Oo]bj/

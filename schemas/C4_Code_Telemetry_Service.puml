@@ -1,0 +1,23 @@
+@startuml C4_Code_Telemetry_Service
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+Container(message_broker, "Message Broker", "RabbitMQ")
+ContainerDb(telemetry_db, "Telemetry DB", "TimescaleDB")
+
+Container_Boundary(telemetry_service, "Telemetry Service") {
+    Component(consumer, "TelemetryConsumer", "Go struct", "Receives messages from RabbitMQ, decodes them.")
+    Component(parser, "DataParser", "Go struct", "Parses the JSON message body into a TelemetryData struct.")
+    Component(validator, "DataValidator", "Go struct", "Validates the correctness and completeness of the data.")
+    Component(repository, "TelemetryRepository", "Go struct", "Responsible for persisting data to TimescaleDB.")
+
+    Rel(consumer, parser, "Uses")
+    Rel(consumer, validator, "Uses")
+    Rel(consumer, repository, "Uses")
+}
+
+Rel(consumer, message_broker, "Reads messages from", "AMQP")
+Rel(repository, telemetry_db, "Saves data to", "SQL")
+
+@enduml

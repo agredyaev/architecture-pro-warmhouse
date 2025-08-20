@@ -1,0 +1,43 @@
+@startuml C4_Container_MVP
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(user, "User", "A customer of the company, a homeowner.")
+
+System_Boundary(smart_home_eco, "Smart Home Ecosystem MVP") {
+    Container(spa, "Web Application", "JavaScript, React", "Provides user interface for managing the smart home.")
+    Container(api_gateway, "API Gateway", "Go, Gin", "Exposes the system's API to the outside world.")
+
+    ContainerDb(user_db, "User DB", "PostgreSQL", "Stores user profiles, homes, and access rights.")
+    Container(user_service, "User Service", "Go", "Manages users, homes, and permissions.")
+
+    ContainerDb(device_db, "Device DB", "PostgreSQL", "Stores device registry, configuration and state.")
+    Container(device_service, "Device Service", "Go", "Manages device lifecycle, configuration and sends commands.")
+
+    ContainerDb(telemetry_db, "Telemetry DB", "TimescaleDB", "Stores time-series data from sensors.")
+    Container(telemetry_service, "Telemetry Service", "Go", "Ingests and processes device telemetry.")
+
+    Container(message_broker, "Message Broker", "RabbitMQ", "Enables asynchronous communication between services.")
+}
+
+System_Ext(smart_device, "Smart Device", "Any smart device (sensor, relay) that supports MQTT.")
+
+Rel(user, spa, "Uses", "HTTPS")
+Rel(spa, api_gateway, "Makes API calls", "HTTPS/JSON")
+
+Rel(api_gateway, user_service, "Auth & User Info", "gRPC")
+Rel(api_gateway, device_service, "Device Info & Commands", "gRPC")
+Rel(api_gateway, telemetry_service, "Historical Data", "gRPC")
+
+Rel(user_service, user_db, "Reads/Writes", "SQL")
+Rel(device_service, device_db, "Reads/Writes", "SQL")
+Rel(telemetry_service, telemetry_db, "Reads/Writes", "SQL")
+
+Rel(device_service, message_broker, "Publishes device events & commands")
+Rel(telemetry_service, message_broker, "Publishes telemetry events")
+
+Rel(smart_device, message_broker, "Sends telemetry, receives commands", "MQTT")
+Rel(telemetry_service, message_broker, "Subscribes to telemetry")
+
+@enduml

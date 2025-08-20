@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package telemetry;
+
+option go_package = "github.com/your-repo/smart-home/pkg/telemetry_service;telemetry_service";
+
+import "google/protobuf/timestamp.proto";
+
+// --- Messages for core entities ---
+
+message TelemetryDataPoint {
+    google.protobuf.Timestamp time = 1;
+    string value = 2; // JSON string
+}
+
+// --- Service Methods ---
+
+service TelemetryService {
+    // Returns a stream of historical telemetry data for a given device
+    rpc GetHistoricalData(GetHistoricalDataRequest) returns (stream TelemetryDataPoint);
+}
+
+// --- Request/Response Messages ---
+
+message GetHistoricalDataRequest {
+    string device_id = 1;
+    google.protobuf.Timestamp start_time = 2;
+    google.protobuf.Timestamp end_time = 3;
+    // Optional: aggregate function (e.g., "AVG", "MAX", "MIN") and window
+    string aggregate_func = 4; 
+    string aggregate_window = 5; // e.g., "1h", "5m"
+}

@@ -1,0 +1,28 @@
+name: PlantUML Diagram Generator
+
+on:
+  push:
+    branches:
+      - main
+      - warmhouse
+
+jobs:
+  generate_diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate PlantUML diagrams
+        run: |
+          docker run --rm -v ${{ github.workspace }}/schemas:/data \
+          plantuml/plantuml:latest -tsvg -o img /data
+
+      - name: Commit & Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs(schemas): auto-generate plantuml diagrams"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          file_pattern: schemas/img/*.svg
